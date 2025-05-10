@@ -1,0 +1,14 @@
+[package]
+name = "bevy_pong"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = "0.15.3"
+rand = "0.9.1"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
