@@ -1,3 +1,5 @@
+use std::f32::consts::{FRAC_PI_3, FRAC_PI_2};
+
 use bevy::{
     math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
     prelude::*,
@@ -157,6 +159,26 @@ fn collide_ball_with_walls(
     }
 }
 
+#[derive(Debug)]
+enum Collision {
+    Horizontal,
+    Vertical,
+}
+
+fn collides(object: &Aabb2d, with: &Aabb2d, velocity: Vec2) -> Option<Collision> {
+    if !object.intersects(with) { return None };
+    let collision_point = object.closest_point(with.center());
+    let offset = object.center() - collision_point;
+
+    if offset.x.abs() > offset.y.abs() {
+        if velocity.x.is_sign_positive() == offset.x.is_sign_positive() { return None };
+        Some(Collision::Horizontal)
+    } else {
+        if velocity.y.is_sign_positive() == offset.y.is_sign_positive() { return None };
+        Some(Collision::Vertical)
+    }
+}
+
 fn collide_ball(
     mut commands: Commands,
     mut ball: Query<(&Transform, &mut Velocity), With<Ball>>,
@@ -174,34 +196,28 @@ fn collide_ball(
                 ball_transform.scale.truncate() / 2.,
             );
 
-            if ball_bounds.intersects(&collider_bounds) {
-                let collision_point = ball_bounds.closest_point(collider_bounds.center());
+            let Some(collision) = collides(&ball_bounds, &collider_bounds, velocity.0) else { continue };
 
-                if is_brick.is_some() {
-                    commands.entity(entity).despawn();
+            if is_brick.is_some() {
+                commands.entity(entity).despawn();
+                match collision {
+                    Collision::Horizontal => velocity.0.x *= -1.,
+                    Collision::Vertical => velocity.0.y *= -1.,
                 }
+            } else {
+                match collision {
+                    Collision::Horizontal => velocity.0.x *= -1.,
+                    Collision::Vertical => {
+                        let pad_location = (ball_bounds.center().x - collider_bounds.center().x) / PADDLE_SIZE.x;
+                        velocity.0 = Vec2::from_angle(pad_location * FRAC_PI_3 - FRAC_PI_2) * BALL_SPEED;
 
-                let offset = ball_bounds.center() - collision_point;
-                if offset.x.abs() > offset.y.abs()
-                    && offset.x.is_sign_positive() != velocity.0.x.is_sign_positive()
-                {
-                    velocity.0.x *= -1.;
-                } else if offset.y.is_sign_positive() != velocity.0.y.is_sign_positive() {
-                    if is_brick.is_none() {
-                        let pad_location =
-                            (ball_bounds.center().x - collider_bounds.center().x) / PADDLE_SIZE.x;
-                        velocity.0 = Vec2::from_angle(
-                            pad_location * core::f32::consts::FRAC_PI_3
-                                - core::f32::consts::FRAC_PI_2,
-                        ) * BALL_SPEED;
                         if keys.pressed(KeyCode::KeyA) {
                             velocity.0.x -= PADDLE_SPEED / 3.;
                         }
                         if keys.pressed(KeyCode::KeyD) {
                             velocity.0.x += PADDLE_SPEED / 3.;
                         }
-                    }
-                    velocity.0.y *= -1.;
+                    },
                 }
             }
         }
