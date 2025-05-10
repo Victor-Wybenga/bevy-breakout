@@ -71,8 +71,10 @@ fn setup(mut commands: Commands, window: Query<&Window>) {
                 Collider,
                 Transform {
                     translation: Vec3::new(
-                        -((BRICK_GRID.x - 1) as f32 * (BRICK_SIZE.x + 5.) / 2.) + col as f32 * (BRICK_SIZE.x + 5.),
-                        (half_window_height - (BRICK_SIZE.y * 2.)) - row as f32 * (BRICK_SIZE.y + 5.),
+                        -((BRICK_GRID.x - 1) as f32 * (BRICK_SIZE.x + 5.) / 2.)
+                            + col as f32 * (BRICK_SIZE.x + 5.),
+                        (half_window_height - (BRICK_SIZE.y * 2.))
+                            - row as f32 * (BRICK_SIZE.y + 5.),
                         0.,
                     ),
                     scale: BRICK_SIZE.extend(0.),
@@ -174,19 +176,24 @@ fn collide_ball(
 
             if ball_bounds.intersects(&collider_bounds) {
                 let collision_point = ball_bounds.closest_point(collider_bounds.center());
-                
+
                 if is_brick.is_some() {
                     commands.entity(entity).despawn();
-                } 
+                }
 
                 let offset = ball_bounds.center() - collision_point;
-                if offset.x.abs() > offset.y.abs() && 
-                   offset.x.is_sign_positive() != velocity.0.x.is_sign_positive() {
+                if offset.x.abs() > offset.y.abs()
+                    && offset.x.is_sign_positive() != velocity.0.x.is_sign_positive()
+                {
                     velocity.0.x *= -1.;
                 } else if offset.y.is_sign_positive() != velocity.0.y.is_sign_positive() {
                     if is_brick.is_none() {
-                        let pad_location = (ball_bounds.center().x - collider_bounds.center().x) / PADDLE_SIZE.x;
-                        velocity.0 = Vec2::from_angle(pad_location * core::f32::consts::FRAC_PI_3 - core::f32::consts::FRAC_PI_2) * BALL_SPEED;
+                        let pad_location =
+                            (ball_bounds.center().x - collider_bounds.center().x) / PADDLE_SIZE.x;
+                        velocity.0 = Vec2::from_angle(
+                            pad_location * core::f32::consts::FRAC_PI_3
+                                - core::f32::consts::FRAC_PI_2,
+                        ) * BALL_SPEED;
                         if keys.pressed(KeyCode::KeyA) {
                             velocity.0.x -= PADDLE_SPEED / 3.;
                         }
